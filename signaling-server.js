@@ -1,15 +1,27 @@
 const http = require('http');
 const WebSocket = require('ws');
+const url = require('url');
 
 const port = process.env.PORT || 3000;
 
 const server = http.createServer((req, res) => {
-  // Respond to health checks or GET /
   res.writeHead(200);
   res.end('OK');
 });
 
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocket.Server({ noServer: true });
+
+server.on('upgrade', (req, socket, head) => {
+  const pathname = url.parse(req.url).pathname;
+
+  if (pathname === '/ws') {
+    wss.handleUpgrade(req, socket, head, ws => {
+      wss.emit('connection', ws, req);
+    });
+  } else {
+    socket.destroy();
+  }
+});
 
 const clients = {};
 
